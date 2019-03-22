@@ -1,4 +1,4 @@
-FROM tensorflow/tensorflow:latest-gpu-py3
+FROM tensorflow/tensorflow:1.10.1-gpu-py3
 # set the working directory
 RUN mkdir app
 WORKDIR app
