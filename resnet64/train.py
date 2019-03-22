@@ -65,8 +65,8 @@ validation_generator = train_datagen.flow_from_directory(
 
 
 # get model prior
-# TODO: validate that this will actually work. Use the junk notebook in the SageMaker 
-# instance to do so.
+# TODO: validate that this will actually work
+# Use the "temp-scratchpad.ipyn b" notebook in the SageMaker instance to do so.
 from keras.models import load_model
 prior = load_model('model-48.h5')
 

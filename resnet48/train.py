@@ -87,7 +87,7 @@ for cnn_block_layer in model.layers[0].layers:
     
 # compile the model
 model.compile(
-    optimizer=RMSprop,
+    optimizer=RMSprop(),
     loss='categorical_crossentropy',
     metrics=['accuracy']
 )
