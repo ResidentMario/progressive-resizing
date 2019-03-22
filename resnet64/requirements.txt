@@ -1,0 +1,7 @@
+numpy
+pandas
+keras
+comet_ml
+awscli
+pillow
+alekseylearn
