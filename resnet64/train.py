@@ -16,6 +16,7 @@ sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
 
 img_dir = 'images_cropped/'
 metadata_filepath = 'X_meta.csv'
+batch_size = 128
 
 
 # set up experiment logging
@@ -51,22 +52,20 @@ test_datagen = ImageDataGenerator(
 train_generator = train_datagen.flow_from_directory(
     img_dir,
     target_size=(48, 48),
-    batch_size=512,
+    batch_size=batch_size,
     class_mode='categorical',
     subset='training',
 )
 validation_generator = train_datagen.flow_from_directory(
     img_dir,
     target_size=(48, 48),
-    batch_size=512,
+    batch_size=batch_size,
     class_mode='categorical',
     subset='validation'
 )
 
 
 # define the model
-
-batch_size = 128
 prior = keras.applications.VGG16(
     include_top=False, 
     weights='imagenet',
@@ -77,7 +76,7 @@ model.add(prior)
 model.add(Flatten())
 model.add(Dense(256, activation='relu', name='Dense_Intermediate'))
 model.add(Dropout(0.1, name='Dropout_Regularization'))
-model.add(Dense(17, activation='sigmoid', name='Output'))
+model.add(Dense(16, activation='sigmoid', name='Output'))
 
 
 # freeze the vgg16 model
@@ -101,8 +100,7 @@ model.fit_generator(
     validation_data=validation_generator,
     validation_steps=len(train_generator.filenames) // batch_size,
     callbacks=[
-        ReduceLROnPlateau(monitor='val_loss', patience=2),
-        EarlyStopping(patience=3, restore_best_weights=True)
+        EarlyStopping(patience=2, restore_best_weights=True)
     ]
 )
 
