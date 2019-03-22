@@ -4,13 +4,13 @@ import pandas as pd
 import keras
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
-from keras.layers import Flatten, Dense, Dropout, Conv2D, MaxPooling2D
+from keras.layers import Flatten, Dense, Dropout
 from keras.optimizers import RMSprop
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
+import tensorflow as tf
 
 
 # check GPU availability
-import tensorflow as tf
 sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
 
 
@@ -50,39 +50,41 @@ test_datagen = ImageDataGenerator(
 )
 train_generator = train_datagen.flow_from_directory(
     img_dir,
-    target_size=(64, 64),
-    batch_size=128,
+    target_size=(48, 48),
+    batch_size=512,
     class_mode='categorical',
     subset='training',
 )
 validation_generator = train_datagen.flow_from_directory(
     img_dir,
-    target_size=(64, 64),
-    batch_size=128,
+    target_size=(48, 48),
+    batch_size=512,
     class_mode='categorical',
     subset='validation'
 )
 
 
-# get model prior
-# TODO: validate that this will actually work
-# Use the "temp-scratchpad.ipyn b" notebook in the SageMaker instance to do so.
-from keras.models import load_model
-prior = load_model('model-48.h5')
-
-
 # define the model
+
+batch_size = 128
+prior = keras.applications.VGG16(
+    include_top=False, 
+    weights='imagenet',
+    input_shape=(48, 48, 3)
+)
 model = Sequential()
-model.add(Conv2D(32, kernel_size=(3, 3), input_shape=(64, 64, 3), activation='relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(prior)
+model.add(Flatten())
+model.add(Dense(256, activation='relu', name='Dense_Intermediate'))
+model.add(Dropout(0.1, name='Dropout_Regularization'))
+model.add(Dense(17, activation='sigmoid', name='Output'))
 
 
 # freeze the vgg16 model
-for cnn_block_layer in model.layers[2].layers:
+for cnn_block_layer in model.layers[0].layers:
     cnn_block_layer.trainable = False
 
-
+    
 # compile the model
 model.compile(
     optimizer=RMSprop(),
@@ -92,7 +94,6 @@ model.compile(
 
 
 # fit the model
-batch_size = 128
 model.fit_generator(
     train_generator,
     steps_per_epoch=len(train_generator.filenames) // batch_size,
@@ -107,7 +108,7 @@ model.fit_generator(
 
 
 # save model artifact
-model.save('/opt/ml/model/model-64.h5')
+model.save('/opt/ml/model/model-48.h5')
 
 
 experiment.end()
