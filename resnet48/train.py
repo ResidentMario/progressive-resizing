@@ -77,7 +77,7 @@ model.add(prior)
 model.add(Flatten())
 model.add(Dense(256, activation='relu', name='Dense_Intermediate'))
 model.add(Dropout(0.1, name='Dropout_Regularization'))
-model.add(Dense(16, activation='sigmoid', name='Output'))
+model.add(Dense(17, activation='sigmoid', name='Output'))
 
 
 # freeze the vgg16 model

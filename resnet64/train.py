@@ -50,15 +50,15 @@ test_datagen = ImageDataGenerator(
 )
 train_generator = train_datagen.flow_from_directory(
     img_dir,
-    target_size=(48, 48),
-    batch_size=512,
+    target_size=(64, 64),
+    batch_size=128,
     class_mode='categorical',
     subset='training',
 )
 validation_generator = train_datagen.flow_from_directory(
     img_dir,
-    target_size=(48, 48),
-    batch_size=512,
+    target_size=(64, 64),
+    batch_size=128,
     class_mode='categorical',
     subset='validation'
 )
@@ -85,7 +85,7 @@ for cnn_block_layer in model.layers[2].layers:
 
 # compile the model
 model.compile(
-    optimizer=RMSprop,
+    optimizer=RMSprop(),
     loss='categorical_crossentropy',
     metrics=['accuracy']
 )
