@@ -16,7 +16,7 @@ sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
 
 img_dir = 'images_cropped/'
 metadata_filepath = 'X_meta.csv'
-batch_size = 128
+batch_size = 512
 
 
 # set up experiment logging
@@ -76,12 +76,13 @@ model.add(prior)
 model.add(Flatten())
 model.add(Dense(256, activation='relu', name='Dense_Intermediate'))
 model.add(Dropout(0.1, name='Dropout_Regularization'))
-model.add(Dense(16, activation='sigmoid', name='Output'))
+model.add(Dense(12, activation='sigmoid', name='Output'))
 
 
 # freeze the vgg16 model
 for cnn_block_layer in model.layers[0].layers:
     cnn_block_layer.trainable = False
+model.layers[0].trainable = False
 
     
 # compile the model
@@ -100,7 +101,8 @@ model.fit_generator(
     validation_data=validation_generator,
     validation_steps=len(train_generator.filenames) // batch_size,
     callbacks=[
-        EarlyStopping(patience=2, restore_best_weights=True)
+        EarlyStopping(patience=3, restore_best_weights=True),
+        ReduceLROnPlateau(patience=2)
     ]
 )
 
