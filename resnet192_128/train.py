@@ -88,9 +88,13 @@ for layer in prior.layers[1:]:
 
 # the pretrained CNN layers are already marked non-trainable
 # mark off the top layers as well
-for layer in prior.layers[-4:]:
+for layer in model.layers[-4:]:
     layer.trainable = False
     
+# set layer names (otherwise names may collide)
+for i, layer in enumerate(model.layers):
+    layer.name = f'layer_{i}'
+
 # compile the model
 model.compile(
     optimizer=RMSprop(),
