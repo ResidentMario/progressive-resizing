@@ -8,6 +8,7 @@ then
     aws s3 cp \
         s3://alpha-quilt-storage/aleksey/progressive-resizing/resnet48-128-train-1/output/model.tar.gz \
         ./model.tar.gz --quiet
+    mkdir resnet48_128
     tar -xzf model.tar.gz -C resnet48_128
     rm model.tar.gz
     rm -rf 'images_cropped/Mango'
