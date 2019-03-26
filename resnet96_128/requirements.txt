@@ -4,4 +4,3 @@ keras
 comet_ml
 awscli
 pillow
-alekseylearn

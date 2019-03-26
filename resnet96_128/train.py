@@ -3,11 +3,12 @@ import numpy as np
 import pandas as pd
 import keras
 from keras.preprocessing.image import ImageDataGenerator
-from keras.models import Sequential
-from keras.layers import Flatten, Dense, Dropout
+from keras.models import Sequential, load_model
+from keras.layers import Flatten, Dense, Dropout, Conv2D, MaxPooling2D, UpSampling2D
 from keras.optimizers import RMSprop
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 import tensorflow as tf
+import pickle
 
 
 # check GPU availability
@@ -16,7 +17,7 @@ sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
 
 img_dir = 'images_cropped/'
 metadata_filepath = 'X_meta.csv'
-batch_size = 512
+batch_size = 128
 
 
 # set up experiment logging
@@ -51,14 +52,14 @@ test_datagen = ImageDataGenerator(
 )
 train_generator = train_datagen.flow_from_directory(
     img_dir,
-    target_size=(48, 48),
+    target_size=(96, 96),
     batch_size=batch_size,
     class_mode='categorical',
     subset='training',
 )
 validation_generator = train_datagen.flow_from_directory(
     img_dir,
-    target_size=(48, 48),
+    target_size=(96, 96),
     batch_size=batch_size,
     class_mode='categorical',
     subset='validation'
@@ -66,24 +67,33 @@ validation_generator = train_datagen.flow_from_directory(
 
 
 # define the model
-prior = keras.applications.VGG16(
-    include_top=False, 
-    weights='imagenet',
-    input_shape=(48, 48, 3)
-)
+
+# init a new model with 96x96 CNN layers
+# padding='same' will downsample to 48x48
+# # which is the expected input size for pretrain
 model = Sequential()
-model.add(prior)
-model.add(Flatten())
-model.add(Dense(256, activation='relu', name='Dense_Intermediate'))
-model.add(Dropout(0.1, name='Dropout_Regularization'))
-model.add(Dense(12, activation='sigmoid', name='Output'))
+model.add(Conv2D(64, kernel_size=(3, 3), input_shape=(96, 96, 3), activation='relu', padding='same'))
+model.add(Conv2D(64, kernel_size=(3, 3), input_shape=(96, 96, 3), activation='relu', padding='same'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
 
+# load the pretrained model
+prior = load_model('resnet48_128/model-48.h5')
 
-# freeze the vgg16 model
-for cnn_block_layer in model.layers[0].layers:
-    cnn_block_layer.trainable = False
-model.layers[0].trainable = False
+# add all but the first two layers of VGG16 to the new model
+# strip the input layer out, this is now 96x96
+# also strip out the first convolutional layer, this took the 48x48 input and convolved it but
+# this is now the job of the three new layers.
+for layer in prior.layers[0].layers[2:]:
+    model.add(layer)
 
+# re-add the feedforward layers on top
+for layer in prior.layers[1:]:
+    model.add(layer)
+
+# the pretrained CNN layers are already marked non-trainable
+# mark off the top layers as well
+for layer in prior.layers[-4:]:
+    layer.trainable = False
     
 # compile the model
 model.compile(
@@ -93,8 +103,17 @@ model.compile(
 )
 
 
+# generate class weights
+import os
+labels_count = dict()
+for img_class in [ic for ic in os.listdir('images_cropped/') if ic[0] != '.']:
+    labels_count[img_class] = len(os.listdir('images_cropped/' + img_class))
+total_count = sum(labels_count.values())
+class_weights = {cls: total_count / count for cls, count in enumerate(labels_count.values())}
+
+
 # fit the model
-model.fit_generator(
+history = model.fit_generator(
     train_generator,
     steps_per_epoch=len(train_generator.filenames) // batch_size,
     epochs=20,
@@ -107,8 +126,10 @@ model.fit_generator(
 )
 
 
-# save model artifact
-model.save('/opt/ml/model/model-48.h5')
+# save model artifacts
+model.save('/opt/ml/model/model-96.h5')
+with open('/opt/ml/model/model-96-history.pickle', 'wb') as fp:
+    pickle.dump(history.history, fp)
 
 
 experiment.end()
