@@ -93,7 +93,7 @@ for layer in model.layers[-4:]:
     
 # set layer names (otherwise names may collide)
 for i, layer in enumerate(model.layers):
-    layer.name = f'layer_{i}'
+    layer.name = 'layer_' + str(i)
 
 # compile the model
 model.compile(
