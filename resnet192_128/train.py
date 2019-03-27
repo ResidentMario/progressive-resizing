@@ -84,6 +84,7 @@ prior = load_model('resnet96_128/model-96.h5')
 # also strip out the first convolutional layer, this took the 96x96 input and convolved it but
 # this is now the job of the three new layers.
 for layer in prior.layers[1:]:
+    layer.name += '_prior'  # set layer names to avoid name collisions
     model.add(layer)
 
 # the pretrained CNN layers are already marked non-trainable
